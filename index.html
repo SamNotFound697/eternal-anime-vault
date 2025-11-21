@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Eternal Anime Vault</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="stars" id="stars"></div>
+  <audio autoplay loop><source src="https://files.catbox.moe/2l2v0r.mp3" type="audio/mpeg"></audio>
+
+  <div class="container">
+    <header class="hero">
+      <h1>Eternal Anime Vault</h1>
+      <p>Only I rule the realms. You may leave memories forever.</p>
+    </header>
+
+    <div class="realms" id="realms">
+      <div class="realm" data-name="Visuals">Visuals</div>
+      <div class="realm" data-name="Games">Games</div>
+      <div class="realm" data-name="Movies">Movies</div>
+      <div class="realm" data-name="Music">Music</div>
+      <div class="realm" data-name="Memes">Memes</div>
+      <div class="realm" data-name="Secrets">Secrets</div>
+    </div>
+
+    <div id="vault" class="hidden">
+      <button id="back">← Realms</button>
+      <h2 id="realm-title"></h2>
+      <button id="new-folder">+ New Subfolder</button>
+      <div id="dropzone">DROP FILES HERE → <span id="path"></span></div>
+      <div id="folders"></div>
+      <div id="files" class="grid"></div>
+    </div>
+  </div>
+
+  <div id="toast">Saved!</div>
+  <script src="/vault.js"></script>
+</body>
+</html>
