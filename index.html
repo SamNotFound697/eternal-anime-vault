@@ -8,12 +8,15 @@
 </head>
 <body>
   <div class="stars" id="stars"></div>
-  <audio autoplay loop><source src="https://files.catbox.moe/2l2v0r.mp3" type="audio/mpeg"></audio>
+  <audio autoplay loop volume="0.4">
+    <source src="https://files.catbox.moe/2l2v0r.mp3" type="audio/mpeg">
+  </audio>
 
   <div class="container">
+    <!-- Landing Page -->
     <header class="hero">
       <h1>Eternal Anime Vault</h1>
-      <p>We may die someday. Maybe try leaving your memories here?</p>
+      <!-- removed the <p> line completely -->
     </header>
 
     <div class="realms" id="realms">
@@ -25,13 +28,29 @@
       <div class="realm" data-name="Secrets">Secrets</div>
     </div>
 
+    <!-- Inside Realm -->
     <div id="vault" class="hidden">
       <button id="back">← Realms</button>
       <h2 id="realm-title"></h2>
-      <button id="new-folder">+ New Subfolder</button>
-      <div id="dropzone">DROP FILES HERE → <span id="path"></span></div>
-      <div id="folders"></div>
+      
+      <div class="folder-controls">
+        <button id="new-folder">+ Create Subfolder</button>
+      </div>
+
+      <div id="dropzone" class="hidden">
+        <div>Drop files → <span id="path"></span></div>
+      </div>
+
+      <div id="folders" class="folder-grid"></div>
       <div id="files" class="grid"></div>
+
+      <!-- MAGIC AUTO-SORT BUTTON -->
+      <div class="magic-bottom">
+        <button id="magic-upload">✦ Magic Auto-Sort Upload ✦</button>
+        <p style="font-size:0.9rem;margin-top:0.5rem;opacity:0.8">
+          Drop anywhere — I will ask where to put it
+        </p>
+      </div>
     </div>
   </div>
 
