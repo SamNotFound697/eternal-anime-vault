@@ -13,10 +13,8 @@
   </audio>
 
   <div class="container">
-    <!-- Landing Page -->
     <header class="hero">
       <h1>Eternal Anime Vault</h1>
-      <!-- removed the <p> line completely -->
     </header>
 
     <div class="realms" id="realms">
@@ -32,26 +30,20 @@
     <div id="vault" class="hidden">
       <button id="back">← Realms</button>
       <h2 id="realm-title"></h2>
-      
-      <div class="folder-controls">
-        <button id="new-folder">+ Create Subfolder</button>
-      </div>
+      <button id="new-folder">+ Create Subfolder</button>
 
       <div id="dropzone" class="hidden">
-        <div>Drop files → <span id="path"></span></div>
+        <div>Drop files into → <span id="path"></span></div>
       </div>
 
       <div id="folders" class="folder-grid"></div>
       <div id="files" class="grid"></div>
-
-      <!-- MAGIC AUTO-SORT BUTTON -->
-      <div class="magic-bottom">
-        <button id="magic-upload">✦ Magic Auto-Sort Upload ✦</button>
-        <p style="font-size:0.9rem;margin-top:0.5rem;opacity:0.8">
-          Drop anywhere — I will ask where to put it
-        </p>
-      </div>
     </div>
+  </div>
+
+  <!-- MAGIC EASTER EGG BUTTON ON LANDING PAGE -->
+  <div class="magic-landing">
+    <button id="magic-secret">Magic ✨</button>
   </div>
 
   <div id="toast">Saved!</div>
