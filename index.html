@@ -1,52 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Eternal Anime Vault</title>
-  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="stars" id="stars"></div>
-  <audio autoplay loop volume="0.4">
-    <source src="https://files.catbox.moe/2l2v0r.mp3" type="audio/mpeg">
-  </audio>
+  <div class="stars"></div>
+  <audio id="bg-music" loop><source src="data:audio/mpeg;base64,..." type="audio/mpeg"></audio>
 
   <div class="container">
     <header class="hero">
-      <h1>Eternal Anime Vault</h1>
+      <h1 class="glitch">Eternal Anime Vault</h1>
+      <p class="subtitle">Only I rule the realms. You may leave memories forever.</p>
     </header>
 
-    <div class="realms" id="realms">
-      <div class="realm" data-name="Visuals">Visuals</div>
-      <div class="realm" data-name="Games">Games</div>
-      <div class="realm" data-name="Movies">Movies</div>
-      <div class="realm" data-name="Music">Music</div>
-      <div class="realm" data-name="Memes">Memes</div>
-      <div class="realm" data-name="Secrets">Secrets</div>
+    <div class="realms-grid">
+      <a href="visuals.html" class="realm-card visuals">Visuals</a>
+      <a href="games.html" class="realm-card games">Games</a>
+      <a href="movies.html" class="realm-card movies">Movies</a>
+      <a href="music.html" class="realm-card music">Music</a>
+      <a href="memes.html" class="realm-card memes">Memes</a>
+      <a href="secrets.html" class="realm-card secrets">Secrets</a>
     </div>
 
-    <!-- Inside Realm -->
-    <div id="vault" class="hidden">
-      <button id="back">← Realms</button>
-      <h2 id="realm-title"></h2>
-      <button id="new-folder">+ Create Subfolder</button>
-
-      <div id="dropzone" class="hidden">
-        <div>Drop files into → <span id="path"></span></div>
-      </div>
-
-      <div id="folders" class="folder-grid"></div>
-      <div id="files" class="grid"></div>
-    </div>
+    <!-- Magic Button - appears after 7 scrolls -->
+    <button id="magic-button" class="magic-btn hidden">
+      ✨ Magic Upload ✨
+    </button>
   </div>
 
-  <!-- MAGIC EASTER EGG BUTTON ON LANDING PAGE -->
-  <div class="magic-landing">
-    <button id="magic-secret">Magic ✨</button>
-  </div>
-
-  <div id="toast">Saved!</div>
-  <script src="/vault.js"></script>
+  <div id="toast"></div>
+  <script src="vault.js"></script>
 </body>
 </html>
