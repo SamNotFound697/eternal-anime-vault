@@ -159,28 +159,25 @@ body{
   z-index:999;
 }
 
-.magic-bottom{
-  position:fixed;
-  bottom:20px;
-  left:50%;
-  transform:translateX(-50%);
-  text-align:center;
-  z-index:100;
-}
-#magic-upload{
-  background:linear-gradient(45deg,#ff00cc,#00ffff);
-  color:white;
-  border:none;
-  padding:1.1rem 3rem;
-  font-size:1.6rem;
-  border-radius:50px;
-  cursor:pointer;
-  box-shadow:0 0 50px rgba(255,0,255,0.9);
-  animation:pulse 3s infinite;
-}
-#magic-upload:hover{
-  transform:translateX(-50%) scale(1.08);
-  box-shadow:0 0 90px #ff00cc;
-}
-
 .hidden{display:none}
+
+/* Secret Magic easter egg button on landing page */
+.magic-landing{
+  position:fixed;
+  bottom:30px;
+  right:30px;
+  z-index:999;
+}
+#magic-secret{
+  background:transparent;
+  border:none;
+  font-size:2.8rem;
+  cursor:pointer;
+  animation:secretPulse 4s infinite;
+  filter:drop-shadow(0 0 20px #ff00cc);
+}
+#magic-secret:hover{transform:scale(1.3) rotate(20deg);}
+@keyframes secretPulse{
+  0%,100%{opacity:0.4}
+  50%{opacity:1}
+}
