@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Orbitron:wght@900&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1f;color:#fff;font-family:'Rubik',sans-serif;overflow-x:hidden;min-height:100vh}
+.stars{position:fixed;inset:0;pointer-events:none;background:transparent}
+.star{position:absolute;background:#fff;width:2px;height:2px;border-radius:50%;animation:twinkle 4s infinite}
+@keyframes twinkle{0%,100%{opacity:0.3}50%{opacity:1}}
+
+.container{max-width:1400px;margin:0 auto;padding:2rem;text-align:center}
+.hero h1{font-family:'Orbitron',sans-serif;font-size:5rem;background:linear-gradient(90deg,#ff00cc,#00ffff);background-clip:text;-webkit-background-clip:text;color:transparent;animation:pulse 3s infinite}
+@keyframes pulse{0%,100%{text-shadow:0 0 20px #f0f}50%{text-shadow:0 0 60px #0ff}}
+
+.realms{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:2rem;margin:4rem 0}
+.realm{background:rgba(255,0,255,0.15);padding:4rem 1rem;font-size:2.8rem;font-weight:bold;border-radius:30px;cursor:pointer;transition:.4s;box-shadow:0 0 40px rgba(255,0,255,0.4);backdrop-filter:blur(10px)}
+.realm:hover{transform:translateY(-20px);box-shadow:0 0 100px #ff00cc;background:rgba(255,0,255,0.3)}
+
+#vault{margin-top:4rem}
+#back{background:#333;padding:1rem 2rem;border:none;color:#0ff;font-size:1.2rem;border-radius:12px;cursor:pointer;margin-bottom:2rem}
+#new-folder{background:#ff00cc;padding:1rem 2rem;border:none;color:white;font-size:1.3rem;border-radius:12px;cursor:pointer}
+
+#dropzone{min-height:60vh;margin:3rem 0;border:6px dashed #ff00cc;border-radius:30px;display:flex;align-items:center;justify-content:center;font-size:2rem;background:rgba(255,0,255,0.08);transition:.4s}
+#dropzone.highlight{border-color:#00ffff;background:rgba(0,255,255,0.2)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:2rem;margin-top:3rem}
+.item{position:relative;border-radius:20px;overflow:hidden;box-shadow:0 0 40px rgba(255,0,255,0.6);transition:.3s}
+.item:hover{transform:scale(1.05)}
+.item img,.item video,.item a{width:100%;display:block;height:100%;object-fit:cover}
+.item a{background:#00000099;color:#0ff;padding:1rem;text-align:center;text-decoration:none;font-weight:bold}
+
+#toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(255,0,255,0.95);padding:1rem 3rem;border-radius:20px;opacity:0;transition:.5s;z-index:999}
+
+.hidden{display:none}
