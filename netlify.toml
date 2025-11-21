@@ -1,5 +1,7 @@
 [build]
+  base = "."
   publish = "."
+  command = "echo 'No build required'"
   functions = "netlify/functions"
 
 [[headers]]
