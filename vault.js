@@ -67,11 +67,14 @@ async function createRealSubfolder() {
   const subfolderPath = `uploads/${currentRealm}/${cleanName}`;
 
   // Create empty .gitkeep so folder appears
-  await fetch('/.netlify/functions/create-folder', {
-    method: 'POST',
-    body: JSON.stringify({ path: subfolderPath })
-  });
+ const res = await fetch('/.netlify/functions/create-folder', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ path: subfolderPath })
+});
 
+if (!res.ok) throw new Error('Failed to create folder');
+  
   showToast(`Folder "${name}" created!`);
   setTimeout(loadRealSubfolders, 1000);
 }
