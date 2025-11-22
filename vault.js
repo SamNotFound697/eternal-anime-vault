@@ -1,27 +1,26 @@
-// vault.js — FINAL VERSION — REAL SUBFOLDERS + NO FAKES
+// vault.js — FINAL, WORKING, NO DEAD CODE
 let currentRealm = '';
 let currentPath = [];
 
-// Realm rules (Visuals = images + videos)
+// Realm rules
 const realmRules = {
   Visuals: ['jpg','jpeg','png','gif','webp','bmp','mp4','mkv','webm','avi','mov'],
   Games: ['apk','exe','zip','rar','7z'],
   Movies: ['mp4','mkv','webm','avi','mov','wmv','flv'],
   Music: ['mp3','wav','flac','aac','ogg','m4a'],
   Memes: ['jpg','jpeg','png','gif','webp','mp4','webm','mov'],
-  Secrets: [] // any
+  Secrets: []
 };
 
 function getRealmFromURL() {
   return window.location.pathname.split('/')[1]?.replace('.html', '') || '';
 }
 
-// INIT REALM PAGE
 function initRealmPage(realm) {
   currentRealm = realm;
   document.body.classList.add('realm-page');
 
-  // Clean breadcrumb
+  // Breadcrumb
   const breadcrumb = document.createElement('div');
   breadcrumb.className = 'breadcrumb';
   breadcrumb.innerHTML = `<a href="index.html">Home</a> > <span>${realm}</span>`;
@@ -34,74 +33,67 @@ function initRealmPage(realm) {
   btn.onclick = createRealSubfolder;
   document.body.appendChild(btn);
 
-  // Clean upload zone
+  // Upload zone
   const zone = document.createElement('div');
   zone.className = 'upload-zone';
-  zone.textContent = 'Drop files here';
+  zone.innerHTML = '<div style="pointer-events:none">Drop files here<br><small style="opacity:0.7;font-size:1rem">or click</small></div>';
   zone.onclick = () => document.getElementById('file-input')?.click();
   document.body.appendChild(zone);
 
-  // Hidden input
+  // Hidden file input
   const input = document.createElement('input');
   input.type = 'file';
   input.multiple = true;
   input.id = 'file-input';
   input.style.display = 'none';
-  input.onchange = (e) => handleFiles(e.target.files);
+  input.onchange = e => handleFiles(e.target.files);
   document.body.appendChild(input);
 
   // Drag & drop
-  zone.ondragover = zone.ondragenter = (e) => { e.preventDefault(); zone.classList.add('dragover'); };
-  zone.ondragleave = zone.ondrop = (e) => { e.preventDefault(); zone.classList.remove('dragover'); };
-  zone.ondrop = (e) => handleFiles(e.dataTransfer.files);
+  zone.ondragover = zone.ondragenter = e => { e.preventDefault(); zone.classList.add('dragover'); };
+  zone.ondragleave = zone.ondrop = e => { e.preventDefault(); zone.classList.remove('dragover'); };
+  zone.ondrop = e => handleFiles(e.dataTransfer.files);
 
-  // Load REAL subfolders (from actual uploads folder)
   loadRealSubfolders();
 }
 
+// THIS IS THE ONLY WORKING SUBFOLDER SYSTEM
 async function createRealSubfolder() {
   const name = prompt('Subfolder name (e.g. Shrek 2025, Goa Trip):');
   if (!name) return;
 
-  const cleanName = name.trim().replace(/[^a-zA-Z0-9-]/g, '_');
-  const subfolderPath = `uploads/${currentRealm}/${cleanName}`;
+  const cleanName = name.trim()
+    .replace(/[^a-zA-Z0-9\s-_]/g, '')
+    .replace(/\s+/g, '-')
+    .toLowerCase();
 
-  // Create empty .gitkeep so folder appears
- const res = await fetch('/.netlify/functions/create-folder', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ path: subfolderPath })
-});
+  if (!cleanName) return showToast('Invalid name');
 
-if (!res.ok) throw new Error('Failed to create folder');
-  
-  showToast(`Folder "${name}" created!`);
-  setTimeout(loadRealSubfolders, 1000);
+  currentPath = [cleanName];
+  updateBreadcrumb();
+  showToast(`Folder "${name}" ready! Drop files now → they go into /${cleanName}/`);
 }
 
 function isAllowed(file) {
-  if (realmRules[currentRealm].length === 0) return true;
+  if (!realmRules[currentRealm] || realmRules[currentRealm].length === 0) return true;
   const ext = file.name.split('.').pop().toLowerCase();
   return realmRules[currentRealm].includes(ext);
 }
 
 async function handleFiles(files) {
-  if (!files || files.length === 0) return;
+  if (!files?.length) return;
   if (currentPath.length === 0) return showToast('Create a subfolder first!');
 
   let uploaded = 0;
   for (const file of files) {
-    if (!isAllowed(file)) {
-      showToast(`❌ ${file.name} not allowed here`);
-      continue;
-    }
+    if (!isAllowed(file)) { showToast(`Blocked ${file.name} not allowed`); continue; }
 
     const form = new FormData();
     form.append('file', file);
     form.append('realm', currentRealm);
     form.append('subfolder', currentPath.join('/'));
 
-    const res = await fetch('/.netlify/functions/upload', {method: 'POST', body: form});
+    const res = await fetch('/.netlify/functions/upload', { method: 'POST', body: form });
     if (res.ok) uploaded++;
   }
 
@@ -111,31 +103,28 @@ async function handleFiles(files) {
   }
 }
 
-// Load REAL subfolders from server
+// Load real subfolders that actually exist
 async function loadRealSubfolders() {
   const container = document.getElementById('subfolders') || document.createElement('div');
   container.id = 'subfolders';
   container.className = 'subfolders';
-  container.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#0ff;margin:2rem">No subfolders yet — create one!</p>';
+  container.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#0ff;margin:4rem">No subfolders yet — create one!</p>';
 
   try {
     const res = await fetch(`/uploads/${currentRealm}/`);
     const text = await res.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, 'text/html');
-    const links = doc.querySelectorAll('a[href]');
-    
-    const folders = Array.from(links)
-      .map(a => a.href.match(/\/([^\/]+)\/$/))
+    const doc = new DOMParser().parseFromString(text, 'text/html');
+    const folders = Array.from(doc.querySelectorAll('a[href]'))
+      .map(a => a.href.match(/([^\/]+)\/$/))
       .filter(m => m)
       .map(m => m[1]);
 
     container.innerHTML = '';
-    folders.forEach(folder => {
+    folders.forEach(f => {
       const el = document.createElement('div');
       el.className = 'folder-icon';
-      el.innerHTML = '📁';
-      el.onclick = () => openSubfolder(folder);
+      el.innerHTML = 'Folder';
+      el.onclick = () => { currentPath = [f]; updateBreadcrumb(); loadFiles(); };
       container.appendChild(el);
     });
   } catch(e) {}
@@ -143,15 +132,9 @@ async function loadRealSubfolders() {
   if (!document.getElementById('subfolders')) document.body.appendChild(container);
 }
 
-function openSubfolder(folder) {
-  currentPath = [folder];
-  updateBreadcrumb();
-  loadFiles();
-}
-
 function updateBreadcrumb() {
-  document.querySelector('.breadcrumb').innerHTML = 
-    `<a href="index.html">Home</a> > <a href="${currentRealm}.html">${currentRealm}</a> > <span>${currentPath.join(' > ')}</span>`;
+  document.querySelector('.breadcrumb').innerHTML =
+    `<a href="index.html">Home</a> > <a href="${currentRealm}.html">${currentRealm}</a>${currentPath.map(p => ` > <span>${p}</span>`).join('')}`;
 }
 
 async function loadFiles() {
@@ -159,27 +142,24 @@ async function loadFiles() {
   container.id = 'file-grid';
   container.className = 'file-grid';
   container.innerHTML = '';
-
-  const path = currentPath.length ? currentPath.join('/') : '';
-  const url = `/uploads/${currentRealm}/${path}/`;
+  const path = currentPath.length ? currentPath.join('/') + '/' : '';
+  const url = `/uploads/${currentRealm}/${path}`;
 
   try {
     const res = await fetch(url);
     const text = await res.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, 'text/html');
-    const links = Array.from(doc.querySelectorAll('a[href]'))
-      .filter(a => !a.href.endsWith('/'))
+    const doc = new DOMParser().parseFromString(text, 'text/html');
+    const files = Array.from(doc.querySelectorAll('a[href]:not([href$="/"])'))
       .map(a => a.href.split('/').pop());
 
-    links.forEach(file => {
+    files.forEach(file => {
       const item = document.createElement('div');
       item.className = 'file-item';
       const ext = file.split('.').pop().toLowerCase();
 
-      if (['jpg','jpeg','png','gif','webp'].includes(ext)) {
+      if (['jpg','jpeg','png','gif','webp','bmp'].includes(ext)) {
         item.innerHTML = `<img src="${url}${file}" loading="lazy">`;
-      } else if (['mp4','webm','mov'].includes(ext)) {
+      } else if (['mp4','webm','mov','mkv','avi'].includes(ext)) {
         item.innerHTML = `<video src="${url}${file}" controls preload="metadata"></video>`;
       } else {
         item.innerHTML = `<a href="${url}${file}" download>${file}</a>`;
@@ -203,7 +183,7 @@ function showToast(msg) {
   setTimeout(() => { t.style.opacity = '0'; t.style.bottom = '0'; }, 3000);
 }
 
-// Auto-init on realm pages
+// Auto-start
 if (location.pathname.includes('.html') && !location.pathname.includes('index')) {
   initRealmPage(getRealmFromURL());
 }
