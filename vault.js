@@ -78,9 +78,16 @@ function initRealmPage(realm) {
   zone.ondragleave = zone.ondrop = e => { e.preventDefault(); zone.classList.remove('dragover'); };
   zone.ondrop = e => handleFiles(e.dataTransfer.files);
 
+   // First load the list of real subfolders (so they always show)
   loadRealSubfolders();
-  loadFromHash(); // ← RESTORES SUBFOLDER AFTER REFRESH
-}
+
+  // Then restore which one you're currently inside (from URL)
+  loadFromHash();
+
+  // If you're NOT inside a subfolder, refresh the list again (this fixes the disappear bug)
+  if (currentPath.length === 0) {
+    setTimeout(loadRealSubfolders, 500);
+  }
 
 async function createRealSubfolder() {
   const name = prompt('Subfolder name (e.g. Shrek 2025, Goa Trip):');
