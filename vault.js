@@ -1,4 +1,4 @@
-// vault.js — FINAL, WORKING, NO DEAD CODE
+// vault.js — FINAL, IMMORTAL, SUBFOLDERS ARE FOREVER
 let currentRealm = '';
 let currentPath = [];
 
@@ -16,31 +16,56 @@ function getRealmFromURL() {
   return window.location.pathname.split('/')[1]?.replace('.html', '') || '';
 }
 
+// Save current path to URL hash (makes subfolders permanent)
+function updateURL() {
+  if (currentPath.length > 0) {
+    location.hash = currentPath.join('/');
+  } else {
+    history.replaceState(null, null, location.pathname);
+  }
+}
+
+// Load subfolder from URL hash on page load / refresh
+function loadFromHash() {
+  if (location.hash) {
+    const hash = decodeURIComponent(location.hash.slice(1));
+    currentPath = hash.split('/').filter(p => p);
+    if (currentPath.length > 0) {
+      updateBreadcrumb();
+      loadFiles();
+    }
+  }
+}
+
+// Click breadcrumb to go up levels
+window.navigateTo = function(path) {
+  currentPath = path ? path.split('/').filter(p => p) : [];
+  updateBreadcrumb();
+  loadFiles();
+  updateURL();
+};
+
 function initRealmPage(realm) {
   currentRealm = realm;
   document.body.classList.add('realm-page');
 
-  // Breadcrumb
   const breadcrumb = document.createElement('div');
   breadcrumb.className = 'breadcrumb';
   breadcrumb.innerHTML = `<a href="index.html">Home</a> > <span>${realm}</span>`;
   document.body.appendChild(breadcrumb);
 
-  // + New Subfolder button
   const btn = document.createElement('button');
   btn.className = 'new-folder-btn';
   btn.textContent = '+ New Subfolder';
   btn.onclick = createRealSubfolder;
   document.body.appendChild(btn);
 
-  // Upload zone
   const zone = document.createElement('div');
   zone.className = 'upload-zone';
   zone.innerHTML = '<div style="pointer-events:none">Drop files here<br><small style="opacity:0.7;font-size:1rem">or click</small></div>';
   zone.onclick = () => document.getElementById('file-input')?.click();
   document.body.appendChild(zone);
 
-  // Hidden file input
   const input = document.createElement('input');
   input.type = 'file';
   input.multiple = true;
@@ -49,18 +74,17 @@ function initRealmPage(realm) {
   input.onchange = e => handleFiles(e.target.files);
   document.body.appendChild(input);
 
-  // Drag & drop
   zone.ondragover = zone.ondragenter = e => { e.preventDefault(); zone.classList.add('dragover'); };
   zone.ondragleave = zone.ondrop = e => { e.preventDefault(); zone.classList.remove('dragover'); };
   zone.ondrop = e => handleFiles(e.dataTransfer.files);
 
   loadRealSubfolders();
+  loadFromHash(); // ← RESTORES SUBFOLDER AFTER REFRESH
 }
 
-// THIS IS THE ONLY WORKING SUBFOLDER SYSTEM
 async function createRealSubfolder() {
   const name = prompt('Subfolder name (e.g. Shrek 2025, Goa Trip):');
-  if (!name) return;
+  if (!name?.trim()) return;
 
   const cleanName = name.trim()
     .replace(/[^a-zA-Z0-9\s-_]/g, '')
@@ -71,13 +95,13 @@ async function createRealSubfolder() {
 
   currentPath = [cleanName];
   updateBreadcrumb();
-  showToast(`Folder "${name}" ready! Drop files now → they go into /${cleanName}/`);
+  updateURL();
+  showToast(`Folder "${name}" ready! Drop files now.`);
 }
 
 function isAllowed(file) {
   if (!realmRules[currentRealm] || realmRules[currentRealm].length === 0) return true;
-  const ext = file.name.split('.').pop().toLowerCase();
-  return realmRules[currentRealm].includes(ext);
+  return realmRules[currentRealm].includes(file.name.split('.').pop().toLowerCase());
 }
 
 async function handleFiles(files) {
@@ -99,11 +123,13 @@ async function handleFiles(files) {
 
   if (uploaded) {
     showToast(`Uploaded ${uploaded} file${uploaded>1?'s':''}!`);
-    setTimeout(loadFiles, 1500);
+    setTimeout(() => {
+      loadRealSubfolders();
+      loadFiles();
+    }, 1500);
   }
 }
 
-// Load real subfolders that actually exist
 async function loadRealSubfolders() {
   const container = document.getElementById('subfolders') || document.createElement('div');
   container.id = 'subfolders';
@@ -115,7 +141,7 @@ async function loadRealSubfolders() {
     const text = await res.text();
     const doc = new DOMParser().parseFromString(text, 'text/html');
     const folders = Array.from(doc.querySelectorAll('a[href]'))
-      .map(a => a.href.match(/([^\/]+)\/$/))
+      .map(a => a.href.match(/([^/]+)\/$/))
       .filter(m => m)
       .map(m => m[1]);
 
@@ -124,7 +150,7 @@ async function loadRealSubfolders() {
       const el = document.createElement('div');
       el.className = 'folder-icon';
       el.innerHTML = 'Folder';
-      el.onclick = () => { currentPath = [f]; updateBreadcrumb(); loadFiles(); };
+      el.onclick = () => { currentPath = [f]; updateBreadcrumb(); loadFiles(); updateURL(); };
       container.appendChild(el);
     });
   } catch(e) {}
@@ -133,8 +159,13 @@ async function loadRealSubfolders() {
 }
 
 function updateBreadcrumb() {
-  document.querySelector('.breadcrumb').innerHTML =
-    `<a href="index.html">Home</a> > <a href="${currentRealm}.html">${currentRealm}</a>${currentPath.map(p => ` > <span>${p}</span>`).join('')}`;
+  const parts = [`<a href="index.html">Home</a>`, ` > <a href="${currentRealm}.html">${currentRealm}</a>`];
+  currentPath.forEach((p, i) => {
+    const pathSoFar = currentPath.slice(0, i + 1).join('/');
+    parts.push(` > <span style="cursor:pointer;color:#0ff" onclick="navigateTo('${pathSoFar}')">${p}</span>`);
+  });
+  document.querySelector('.breadcrumb').innerHTML = parts.join('');
+  updateURL();
 }
 
 async function loadFiles() {
@@ -159,7 +190,7 @@ async function loadFiles() {
 
       if (['jpg','jpeg','png','gif','webp','bmp'].includes(ext)) {
         item.innerHTML = `<img src="${url}${file}" loading="lazy">`;
-      } else if (['mp4','webm','mov','mkv','avi'].includes(ext)) {
+      } else if (['mp4','webm','mov','mkv','avi','flv'].includes(ext)) {
         item.innerHTML = `<video src="${url}${file}" controls preload="metadata"></video>`;
       } else {
         item.innerHTML = `<a href="${url}${file}" download>${file}</a>`;
@@ -174,7 +205,7 @@ async function loadFiles() {
 }
 
 function showToast(msg) {
-  const t = document.getElementById('toast') || document.createElement('div');
+  const t = document.createElement('div');
   t.id = 'toast';
   t.textContent = msg;
   document.body.appendChild(t);
@@ -183,7 +214,7 @@ function showToast(msg) {
   setTimeout(() => { t.style.opacity = '0'; t.style.bottom = '0'; }, 3000);
 }
 
-// Auto-start
+// Start
 if (location.pathname.includes('.html') && !location.pathname.includes('index')) {
   initRealmPage(getRealmFromURL());
 }
