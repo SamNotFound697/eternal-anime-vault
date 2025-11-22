@@ -3,19 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Music Realm - Eternal Anime Vault</title>
+  <title>Music — Eternals Vault</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="stars"></div>
 
-  <!-- EVERYTHING (breadcrumb, buttons, upload zone, grids) is added by vault.js -->
-  <!-- This keeps it 100 % clean and bug-free -->
+  <div class="breadcrumb"></div>
+  <button class="new-folder-btn">+ New Subfolder</button>
+  <div class="upload-zone">Drop files here or click</div>
+
+  <div id="subfolders" class="subfolders"></div>
+  <div id="file-grid" class="file-grid"></div>
   <div id="toast"></div>
 
   <script src="vault.js"></script>
   <script>
-    // Change only this line for each realm
+    // ONLY CHANGE THIS WORD FOR EACH REALM
     initRealmPage('Music');
   </script>
 </body>
