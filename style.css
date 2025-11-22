@@ -35,14 +35,17 @@ body {
 }
 
 /* CLEAN TITLE — NO SHAKE EVER */
+/* Mobile-perfect title — never goes off screen */
 .glitch {
   font-family: 'Orbitron', monospace;
-  font-size: 5rem;
   font-weight: 900;
   background: linear-gradient(45deg, #ff00cc, #00ffff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 0 30px rgba(255,0,204,0.4);
+  font-size: clamp(2.5rem, 10vw, 5rem);   /* ← THIS LINE FIXES MOBILE */
+  line-height: 1.1;
+  padding: 0 1rem;
   animation: none !important;
 }
 
