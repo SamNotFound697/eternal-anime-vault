@@ -3,30 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Visuals Realm - Eternal Anime Vault</title>
+  <title>Music Realm - Eternal Anime Vault</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="stars"></div>
 
-  <div class="breadcrumb">
-    <a href="index.html">Home</a> > <span>Visuals</span>
-  </div>
+  <!-- EVERYTHING (breadcrumb, buttons, upload zone, grids) is added by vault.js -->
+  <!-- This keeps it 100 % clean and bug-free -->
+  <div id="toast"></div>
 
-  <button class="new-folder-btn">+ New Subfolder</button>
-
-  <div class="upload-zone" id="upload-zone">
-    Drop files here or click
-    <input type="file" multiple style="display:none" id="file-input">
-  </div>
-
-  <div class="subfolders" id="subfolders"></div>
-  <div class="file-grid" id="file-grid"></div>
-
-  <div id="toast">Uploaded!</div>
   <script src="vault.js"></script>
   <script>
-    // Auto-init this realm
+    // Change only this line for each realm
     initRealmPage('Visuals');
   </script>
 </body>
