@@ -1,4 +1,4 @@
-// vault.js — PROVEN URL-BASED SUBFOLDERS (REFRESH-SAFE, PERMANENT)
+// vault.js — FINAL FIX: PERMANENT SUBFOLDERS + FILES SHOW + NO ERRORS
 let currentRealm = '';
 let currentPath = [];
 
@@ -16,27 +16,29 @@ function getRealmFromURL() {
   return window.location.pathname.split('/')[1]?.replace('.html', '') || '';
 }
 
-// Save path to URL hash (refresh-safe)
+// Update URL hash for permanent subfolders
 function updateURL() {
   if (currentPath.length > 0) {
     location.hash = currentPath.join('/');
   } else {
-    history.replaceState(null, null, location.pathname);
+    location.hash = '';
   }
 }
 
-// Load path from URL hash (on refresh)
+// Load subfolder from hash on page load/refresh
 function loadFromHash() {
   if (location.hash) {
     currentPath = decodeURIComponent(location.hash.slice(1)).split('/').filter(p => p);
     if (currentPath.length > 0) {
       updateBreadcrumb();
       loadFiles();
+      return true;
     }
   }
+  return false;
 }
 
-// Click breadcrumb to navigate
+// Breadcrumb click to navigate
 window.navigateTo = function(path) {
   currentPath = path ? path.split('/').filter(p => p) : [];
   updateBreadcrumb();
@@ -48,41 +50,53 @@ function initRealmPage(realm) {
   currentRealm = realm;
   document.body.classList.add('realm-page');
 
-  // Breadcrumb
-  const bc = document.createElement('div');
-  bc.className = 'breadcrumb';
+  // Safe breadcrumb creation
+  let bc = document.querySelector('.breadcrumb');
+  if (!bc) {
+    bc = document.createElement('div');
+    bc.className = 'breadcrumb';
+    document.body.appendChild(bc);
+  }
   bc.innerHTML = `<a href="index.html">Home</a> > <span>${realm}</span>`;
-  document.body.appendChild(bc);
 
-  // + New Subfolder button
-  const btn = document.createElement('button');
-  btn.className = 'new-folder-btn';
-  btn.textContent = '+ New Subfolder';
-  btn.onclick = createSubfolder;
-  document.body.appendChild(btn);
+  // New folder button
+  let btn = document.querySelector('.new-folder-btn');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.className = 'new-folder-btn';
+    btn.textContent = '+ New Subfolder';
+    btn.onclick = createSubfolder;
+    document.body.appendChild(btn);
+  }
 
   // Upload zone
-  const zone = document.createElement('div');
-  zone.className = 'upload-zone';
-  zone.innerHTML = '<div style="pointer-events:none">Drop files here<br><small style="opacity:0.7;font-size:1rem">or click</small></div>';
-  zone.onclick = () => document.getElementById('file-input')?.click();
-  document.body.appendChild(zone);
+  let zone = document.querySelector('.upload-zone');
+  if (!zone) {
+    zone = document.createElement('div');
+    zone.className = 'upload-zone';
+    zone.innerHTML = '<div style="pointer-events:none">Drop files here<br><small style="opacity:0.7;font-size:1rem">or click</small></div>';
+    zone.onclick = () => document.getElementById('file-input')?.click();
+    document.body.appendChild(zone);
+  }
 
-  // Hidden file input
-  const input = document.createElement('input');
-  input.type = 'file'; input.multiple = true; input.id = 'file-input'; input.style.display = 'none';
-  input.onchange = e => handleFiles(e.target.files);
-  document.body.appendChild(input);
+  // File input
+  let input = document.getElementById('file-input');
+  if (!input) {
+    input = document.createElement('input');
+    input.type = 'file'; input.multiple = true; input.id = 'file-input'; input.style.display = 'none';
+    input.onchange = e => handleFiles(e.target.files);
+    document.body.appendChild(input);
+  }
 
   // Drag & drop
   zone.ondragover = zone.ondragenter = e => { e.preventDefault(); zone.classList.add('dragover'); };
   zone.ondragleave = zone.ondrop = e => { e.preventDefault(); zone.classList.remove('dragover'); };
   zone.ondrop = e => handleFiles(e.dataTransfer.files);
 
-  // CRITICAL ORDER: Load hash first, then folders/files
-  loadFromHash(); // Restore subfolder if in URL
-  loadRealSubfolders(); // Show all real folders
-  if (currentPath.length === 0) loadFiles(); // Show root files if no subfolder
+  // Load
+  loadFromHash(); // Restore subfolder
+  loadRealSubfolders(); // Show all folders
+  if (currentPath.length === 0) loadFiles(); // Show root
 }
 
 function createSubfolder() {
@@ -128,7 +142,7 @@ async function handleFiles(files) {
   if (uploaded) {
     showToast(`Uploaded ${uploaded} file${uploaded > 1 ? 's' : ''}!`);
     setTimeout(() => {
-      loadRealSubfolders(); // Refresh list (now includes new folder if it has files)
+      loadRealSubfolders();
       loadFiles();
     }, 1500);
   }
@@ -142,6 +156,7 @@ async function loadRealSubfolders() {
 
   try {
     const res = await fetch(`/uploads/${currentRealm}/`);
+    if (!res.ok) throw new Error('No uploads folder');
     const text = await res.text();
     const doc = new DOMParser().parseFromString(text, 'text/html');
     const folders = Array.from(doc.querySelectorAll('a[href]'))
@@ -153,12 +168,14 @@ async function loadRealSubfolders() {
     folders.forEach(f => {
       const el = document.createElement('div');
       el.className = 'folder-icon';
-      el.innerHTML = 'Folder';
+      el.innerHTML = '📁';
       el.onclick = () => { currentPath = [f]; updateBreadcrumb(); loadFiles(); updateURL(); };
       el.title = f;
       container.appendChild(el);
     });
-  } catch(e) {}
+  } catch(e) {
+    console.log('No subfolders yet');
+  }
 
   if (!document.getElementById('subfolders')) document.body.appendChild(container);
 }
@@ -184,6 +201,7 @@ async function loadFiles() {
 
   try {
     const res = await fetch(url);
+    if (!res.ok) throw new Error('No files');
     const text = await res.text();
     const doc = new DOMParser().parseFromString(text, 'text/html');
     const files = Array.from(doc.querySelectorAll('a[href]:not([href$="/"])'))
@@ -204,7 +222,7 @@ async function loadFiles() {
       container.appendChild(item);
     });
   } catch(e) {
-    container.innerHTML = '<p style="grid-column:1/-1;text-align:center">No files yet — drop some!</p>';
+    container.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#ccc">No files yet — drop some!</p>';
   }
 
   if (!document.getElementById('file-grid')) document.body.appendChild(container);
