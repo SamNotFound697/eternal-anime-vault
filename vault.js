@@ -1,126 +1,226 @@
-// vault.js — ONE SUBFOLDER = ONE REAL .HTML PAGE (IMMORTAL)
+// vault.js — PROVEN URL-BASED SUBFOLDERS (REFRESH-SAFE, PERMANENT)
 let currentRealm = '';
-let currentSubfolder = '';
+let currentPath = [];
 
-function getRealm() {
-  const file = location.pathname.split('/').pop();
-  return file.split('-')[0] || file.replace('.html', '');
+// Realm rules
+const realmRules = {
+  Visuals: ['jpg','jpeg','png','gif','webp','bmp','mp4','mkv','webm','avi','mov'],
+  Games: ['apk','exe','zip','rar','7z'],
+  Movies: ['mp4','mkv','webm','avi','mov','wmv','flv'],
+  Music: ['mp3','wav','flac','aac','ogg','m4a'],
+  Memes: ['jpg','jpeg','png','gif','webp','mp4','webm','mov'],
+  Secrets: []
+};
+
+function getRealmFromURL() {
+  return window.location.pathname.split('/')[1]?.replace('.html', '') || '';
 }
+
+// Save path to URL hash (refresh-safe)
+function updateURL() {
+  if (currentPath.length > 0) {
+    location.hash = currentPath.join('/');
+  } else {
+    history.replaceState(null, null, location.pathname);
+  }
+}
+
+// Load path from URL hash (on refresh)
+function loadFromHash() {
+  if (location.hash) {
+    currentPath = decodeURIComponent(location.hash.slice(1)).split('/').filter(p => p);
+    if (currentPath.length > 0) {
+      updateBreadcrumb();
+      loadFiles();
+    }
+  }
+}
+
+// Click breadcrumb to navigate
+window.navigateTo = function(path) {
+  currentPath = path ? path.split('/').filter(p => p) : [];
+  updateBreadcrumb();
+  loadFiles();
+  updateURL();
+};
 
 function initRealmPage(realm) {
   currentRealm = realm;
   document.body.classList.add('realm-page');
 
-  // Main realm page
-  if (!location.pathname.includes('-')) {
-    document.querySelector('.breadcrumb').innerHTML = `<a href="index.html">Home</a> > ${realm}`;
-    document.querySelector('.new-folder-btn').onclick = createSubPage;
-    loadSubPages();
-    return;
-  }
+  // Breadcrumb
+  const bc = document.createElement('div');
+  bc.className = 'breadcrumb';
+  bc.innerHTML = `<a href="index.html">Home</a> > <span>${realm}</span>`;
+  document.body.appendChild(bc);
 
-  // This is a subfolder page (e.g. visuals-goa-2025.html)
-  const title = decodeURIComponent(
-    location.pathname.split('-').slice(1).join('-').replace('.html', '').replace(/-/g, ' ')
-  );
-  document.querySelector('.breadcrumb').innerHTML = 
-    `<a href="index.html">Home</a> > <a href="${realm}.html">${realm}</a> > ${title}`;
-  document.querySelector('.new-folder-btn').remove();
+  // + New Subfolder button
+  const btn = document.createElement('button');
+  btn.className = 'new-folder-btn';
+  btn.textContent = '+ New Subfolder';
+  btn.onclick = createSubfolder;
+  document.body.appendChild(btn);
 
-  currentSubfolder = location.pathname.split('/').pop()
-    .replace('.html', '')
-    .replace(realm + '-', '');
+  // Upload zone
+  const zone = document.createElement('div');
+  zone.className = 'upload-zone';
+  zone.innerHTML = '<div style="pointer-events:none">Drop files here<br><small style="opacity:0.7;font-size:1rem">or click</small></div>';
+  zone.onclick = () => document.getElementById('file-input')?.click();
+  document.body.appendChild(zone);
 
-  loadFiles();
+  // Hidden file input
+  const input = document.createElement('input');
+  input.type = 'file'; input.multiple = true; input.id = 'file-input'; input.style.display = 'none';
+  input.onchange = e => handleFiles(e.target.files);
+  document.body.appendChild(input);
+
+  // Drag & drop
+  zone.ondragover = zone.ondragenter = e => { e.preventDefault(); zone.classList.add('dragover'); };
+  zone.ondragleave = zone.ondrop = e => { e.preventDefault(); zone.classList.remove('dragover'); };
+  zone.ondrop = e => handleFiles(e.dataTransfer.files);
+
+  // CRITICAL ORDER: Load hash first, then folders/files
+  loadFromHash(); // Restore subfolder if in URL
+  loadRealSubfolders(); // Show all real folders
+  if (currentPath.length === 0) loadFiles(); // Show root files if no subfolder
 }
 
-async function createSubPage() {
-  const name = prompt('Subfolder name (e.g. Goa Trip 2025, Shrek Pack):');
+function createSubfolder() {
+  const name = prompt('Subfolder name (e.g. Shrek 2025, Goa Trip):');
   if (!name?.trim()) return;
 
-  const clean = name.trim()
-    .replace(/[^a-zA-Z0-9\s-]/g, '')
+  const cleanName = name.trim()
+    .replace(/[^a-zA-Z0-9\s-_]/g, '')
     .replace(/\s+/g, '-')
     .toLowerCase();
 
-  const filename = `${currentRealm}-${clean}.html`;
+  if (!cleanName) return showToast('Invalid name');
 
-  const res = await fetch('/.netlify/functions/create-page', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ realm: currentRealm, slug: clean, title: name })
-  });
+  currentPath = [cleanName];
+  updateBreadcrumb();
+  updateURL();
+  showToast(`Folder "${name}" ready! Drop files now.`);
+  loadFiles(); // Show empty subfolder
+}
 
-  if (res.ok) {
-    showToast(`"${name}" created! Opening...`);
-    setTimeout(() => location.href = filename, 1000);
-  } else {
-    showToast('Failed — check logs');
+function isAllowed(file) {
+  if (!realmRules[currentRealm] || realmRules[currentRealm].length === 0) return true;
+  return realmRules[currentRealm].includes(file.name.split('.').pop().toLowerCase());
+}
+
+async function handleFiles(files) {
+  if (!files?.length) return;
+  if (currentPath.length === 0) return showToast('Create a subfolder first!');
+
+  let uploaded = 0;
+  for (const file of files) {
+    if (!isAllowed(file)) { showToast(`Blocked ${file.name} not allowed`); continue; }
+
+    const form = new FormData();
+    form.append('file', file);
+    form.append('realm', currentRealm);
+    form.append('subfolder', currentPath.join('/'));
+
+    const res = await fetch('/.netlify/functions/upload', { method: 'POST', body: form });
+    if (res.ok) uploaded++;
+  }
+
+  if (uploaded) {
+    showToast(`Uploaded ${uploaded} file${uploaded > 1 ? 's' : ''}!`);
+    setTimeout(() => {
+      loadRealSubfolders(); // Refresh list (now includes new folder if it has files)
+      loadFiles();
+    }, 1500);
   }
 }
 
-async function loadSubPages() {
-  const container = document.getElementById('subfolders');
-  container.innerHTML = '<p style="grid-column:1/-1;color:#0ff;text-align:center;margin:4rem">No subfolders yet — create one!</p>';
+async function loadRealSubfolders() {
+  const container = document.getElementById('subfolders') || document.createElement('div');
+  container.id = 'subfolders';
+  container.className = 'subfolders';
+  container.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#0ff;margin:4rem">No subfolders yet — create one!</p>';
 
-  const res = await fetch('/');
-  const text = await res.text();
-  const doc = new DOMParser().parseFromString(text, 'text/html');
-  const pages = [...doc.querySelectorAll('a[href]')]
-    .map(a => a.href.split('/').pop())
-    .filter(f => f.startsWith(currentRealm + '-') && f.endsWith('.html'));
+  try {
+    const res = await fetch(`/uploads/${currentRealm}/`);
+    const text = await res.text();
+    const doc = new DOMParser().parseFromString(text, 'text/html');
+    const folders = Array.from(doc.querySelectorAll('a[href]'))
+      .map(a => a.href.match(/([^/]+)\/$/))
+      .filter(m => m)
+      .map(m => m[1]);
 
-  container.innerHTML = '';
-  pages.forEach(file => {
-    const title = file.replace(currentRealm + '-', '').replace('.html', '').replace(/-/g, ' ');
-    const div = document.createElement('div');
-    div.className = 'folder-icon';
-    div.innerHTML = 'Folder';
-    div.title = title;
-    div.onclick = () => location.href = file;
-    container.appendChild(div);
+    container.innerHTML = '';
+    folders.forEach(f => {
+      const el = document.createElement('div');
+      el.className = 'folder-icon';
+      el.innerHTML = 'Folder';
+      el.onclick = () => { currentPath = [f]; updateBreadcrumb(); loadFiles(); updateURL(); };
+      el.title = f;
+      container.appendChild(el);
+    });
+  } catch(e) {}
+
+  if (!document.getElementById('subfolders')) document.body.appendChild(container);
+}
+
+function updateBreadcrumb() {
+  const parts = [`<a href="index.html">Home</a>`, ` > <a href="${currentRealm}.html">${currentRealm}</a>`];
+  currentPath.forEach((p, i) => {
+    const pathSoFar = currentPath.slice(0, i + 1).join('/');
+    parts.push(` > <span style="cursor:pointer;color:#0ff" onclick="navigateTo('${pathSoFar}')">${p}</span>`);
   });
+  document.querySelector('.breadcrumb').innerHTML = parts.join('');
+  updateURL();
 }
 
 async function loadFiles() {
-  const grid = document.getElementById('file-grid');
-  grid.innerHTML = '';
-  const url = `/uploads/${currentRealm}/${currentSubfolder}/`;
+  const container = document.getElementById('file-grid') || document.createElement('div');
+  container.id = 'file-grid';
+  container.className = 'file-grid';
+  container.innerHTML = '';
+
+  const path = currentPath.length ? currentPath.join('/') + '/' : '';
+  const url = `/uploads/${currentRealm}/${path}`;
 
   try {
     const res = await fetch(url);
     const text = await res.text();
     const doc = new DOMParser().parseFromString(text, 'text/html');
-    const files = [...doc.querySelectorAll('a[href]:not([href$="/"])')]
+    const files = Array.from(doc.querySelectorAll('a[href]:not([href$="/"])'))
       .map(a => a.href.split('/').pop());
 
-    files.forEach(f => {
-      const ext = f.split('.').pop().toLowerCase();
-      const el = document.createElement('div');
-      el.className = 'file-item';
-      if (['jpg','jpeg','png','gif','webp','bmp'].includes(ext))
-        el.innerHTML = `<img src="${url}${f}" loading="lazy">`;
-      else if (['mp4','webm','mov','mkv','avi','flv'].includes(ext))
-        el.innerHTML = `<video src="${url}${f}" controls preload="metadata"></video>`;
-      else
-        el.innerHTML = `<a href="${url}${f}" download>${f}</a>`;
-      grid.appendChild(el);
+    files.forEach(file => {
+      const item = document.createElement('div');
+      item.className = 'file-item';
+      const ext = file.split('.').pop().toLowerCase();
+
+      if (['jpg','jpeg','png','gif','webp','bmp'].includes(ext)) {
+        item.innerHTML = `<img src="${url}${file}" loading="lazy">`;
+      } else if (['mp4','webm','mov','mkv','avi','flv'].includes(ext)) {
+        item.innerHTML = `<video src="${url}${file}" controls preload="metadata"></video>`;
+      } else {
+        item.innerHTML = `<a href="${url}${file}" download>${file}</a>`;
+      }
+      container.appendChild(item);
     });
-  } catch (e) {
-    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center">No files yet — drop some!</p>';
+  } catch(e) {
+    container.innerHTML = '<p style="grid-column:1/-1;text-align:center">No files yet — drop some!</p>';
   }
+
+  if (!document.getElementById('file-grid')) document.body.appendChild(container);
 }
 
 function showToast(msg) {
-  const t = document.createElement('div');
+  const t = document.getElementById('toast') || document.createElement('div');
   t.id = 'toast';
   t.textContent = msg;
   document.body.appendChild(t);
-  t.style.opacity = '1'; t.style.bottom = '2rem';
-  setTimeout(() => t.remove(), 3000);
+  t.style.opacity = '1';
+  t.style.bottom = '2rem';
+  setTimeout(() => { t.style.opacity = '0'; t.style.bottom = '0'; }, 3000);
 }
 
-// START
-if (location.pathname.includes('.html') && !location.pathname.includes('index.html')) {
-  initRealmPage(getRealm());
+// Auto-start
+if (location.pathname.includes('.html') && !location.pathname.includes('index')) {
+  initRealmPage(getRealmFromURL());
 }
